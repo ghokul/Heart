@@ -1,24 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta
+ name="viewport"
+ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+/>
 <title>Heart</title>
+
 <style>
- * { margin: 0; padding: 0; box-sizing: border-box; }
- html, body {
-   width: 100%; height: 100%;
+ * {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+ }
+
+ html,
+ body {
+   width: 100%;
+   height: 100%;
    background: #000;
    overflow: hidden;
    display: flex;
    align-items: center;
    justify-content: center;
  }
+
  canvas {
    display: block;
    width: 100vw !important;
    height: 100vh !important;
  }
+
  #replay {
    position: fixed;
    bottom: 24px;
@@ -38,9 +51,14 @@
  }
 </style>
 </head>
+
 <body>
+
 <canvas id="c"></canvas>
-<button id="replay" onclick="restart()">↺ Replay</button>
+
+<button id="replay" onclick="restart()">
+ ↺ Replay
+</button>
 
 <script>
 const canvas = document.getElementById('c');
@@ -50,8 +68,14 @@ function resize() {
  canvas.width = window.innerWidth;
  canvas.height = window.innerHeight;
 }
+
 resize();
-window.addEventListener('resize', () => { resize(); buildHeart(); restart(); });
+
+window.addEventListener('resize', () => {
+ resize();
+ buildHeart();
+ restart();
+});
 
 const W = () => canvas.width;
 const H = () => canvas.height;
@@ -65,200 +89,433 @@ const COLORS = [
  '#ff1100',
 ];
 
-function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
-function heartY(t) { return -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)); }
+function heartX(t) {
+ return 16 * Math.pow(Math.sin(t), 3);
+}
+
+function heartY(t) {
+ return -(
+   13 * Math.cos(t)
+   - 5 * Math.cos(2 * t)
+   - 2 * Math.cos(3 * t)
+   - Math.cos(4 * t)
+ );
+}
 
 const TOTAL_PTS = 800;
 let heartPath = [];
 
 function buildHeart() {
+
  heartPath = [];
- // Use 75% of the smaller dimension so it always fits with padding
+
  const scale = Math.min(W(), H()) * 0.038;
+
+ // PERFECT CENTER
  const cx = W() / 2;
- const cy = H() / 2 + H() * 0.03;
+ const cy = H() / 2;
+
  for (let i = 0; i <= TOTAL_PTS; i++) {
+
    const t = (i / TOTAL_PTS) * Math.PI * 2;
+
    heartPath.push({
      x: cx + heartX(t) * scale,
      y: cy + heartY(t) * scale
    });
  }
 }
+
 buildHeart();
 
 function hexToRgb(hex) {
- return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+ return [
+   parseInt(hex.slice(1,3),16),
+   parseInt(hex.slice(3,5),16),
+   parseInt(hex.slice(5,7),16)
+ ];
 }
+
 function lerpColor(a, b, t) {
- const [r1,g1,b1] = hexToRgb(a), [r2,g2,b2] = hexToRgb(b);
- return [Math.round(r1+(r2-r1)*t), Math.round(g1+(g2-g1)*t), Math.round(b1+(b2-b1)*t)];
+
+ const [r1,g1,b1] = hexToRgb(a);
+ const [r2,g2,b2] = hexToRgb(b);
+
+ return [
+   Math.round(r1 + (r2-r1)*t),
+   Math.round(g1 + (g2-g1)*t),
+   Math.round(b1 + (b2-b1)*t)
+ ];
 }
+
 function colorAt(frac) {
+
  const n = COLORS.length - 1;
+
  const pos = Math.min(frac, 0.9999) * n;
+
  const i = Math.floor(pos);
- const [r,g,b] = lerpColor(COLORS[i], COLORS[i+1], pos - i);
- return { rgb: `rgb(${r},${g},${b})`, r, g, b };
+
+ const [r,g,b] = lerpColor(
+   COLORS[i],
+   COLORS[i+1],
+   pos - i
+ );
+
+ return {
+   rgb: `rgb(${r},${g},${b})`,
+   r, g, b
+ };
 }
 
 class Particle {
+
  constructor(x, y, color, type='trail') {
-   this.x = x; this.y = y;
+
+   this.x = x;
+   this.y = y;
+
    this.type = type;
+
    const angle = Math.random() * Math.PI * 2;
-   const spd = type === 'burst' ? Math.random()*4+1 : Math.random()*1.8+0.2;
+
+   const spd =
+     type === 'burst'
+     ? Math.random()*4+1
+     : Math.random()*1.8+0.2;
+
    this.vx = Math.cos(angle) * spd;
    this.vy = Math.sin(angle) * spd;
+
    this.life = 1;
-   this.decay = type === 'burst' ? Math.random()*0.018+0.008 : Math.random()*0.007+0.002;
-   this.size = type === 'burst' ? Math.random()*3.5+1 : Math.random()*2.2+0.4;
+
+   this.decay =
+     type === 'burst'
+     ? Math.random()*0.018+0.008
+     : Math.random()*0.007+0.002;
+
+   this.size =
+     type === 'burst'
+     ? Math.random()*3.5+1
+     : Math.random()*2.2+0.4;
+
    this.color = color;
+
    this.twinkle = Math.random() > 0.6;
    this.twinkleSpeed = Math.random()*0.15+0.05;
    this.twinklePhase = Math.random()*Math.PI*2;
  }
+
  update() {
-   this.x += this.vx; this.y += this.vy;
+
+   this.x += this.vx;
+   this.y += this.vy;
+
    this.vy += this.type === 'burst' ? 0.08 : 0.01;
+
    this.vx *= 0.993;
+
    this.life -= this.decay;
  }
+
  draw(frame) {
+
    if (this.life <= 0) return;
+
    const alpha = this.twinkle
-     ? this.life * (0.5 + 0.5 * Math.sin(frame * this.twinkleSpeed + this.twinklePhase))
+     ? this.life * (
+         0.5 + 0.5 * Math.sin(
+           frame * this.twinkleSpeed +
+           this.twinklePhase
+         )
+       )
      : this.life * 0.85;
+
    ctx.save();
+
    ctx.globalAlpha = Math.max(0, alpha);
+
    ctx.fillStyle = this.color.rgb;
-   ctx.shadowBlur = this.type === 'burst' ? 10 : 6;
+
+   ctx.shadowBlur =
+     this.type === 'burst'
+     ? 10
+     : 6;
+
    ctx.shadowColor = this.color.rgb;
+
    ctx.beginPath();
-   ctx.arc(this.x, this.y, Math.max(0.1, this.size * this.life), 0, Math.PI*2);
+
+   ctx.arc(
+     this.x,
+     this.y,
+     Math.max(0.1, this.size * this.life),
+     0,
+     Math.PI*2
+   );
+
    ctx.fill();
+
    ctx.restore();
  }
 }
 
 const STARS = Array.from({length: 140}, () => ({
- x: Math.random(), y: Math.random(),
+ x: Math.random(),
+ y: Math.random(),
  r: Math.random()*1.2+0.2,
  alpha: Math.random()*0.4+0.1,
  speed: Math.random()*0.02+0.005
 }));
 
 function drawStars(frame) {
+
  for (const s of STARS) {
-   const a = s.alpha * (0.5 + 0.5 * Math.sin(frame * s.speed));
+
+   const a =
+     s.alpha * (
+       0.5 + 0.5 * Math.sin(frame * s.speed)
+     );
+
    ctx.save();
+
    ctx.globalAlpha = a;
+
    ctx.fillStyle = '#ffffff';
+
    ctx.beginPath();
-   ctx.arc(s.x * W(), s.y * H(), s.r, 0, Math.PI*2);
+
+   ctx.arc(
+     s.x * W(),
+     s.y * H(),
+     s.r,
+     0,
+     Math.PI*2
+   );
+
    ctx.fill();
+
    ctx.restore();
  }
 }
 
-let pulseRadius = 0, pulseAlpha = 0, pulsing = false;
+let pulseRadius = 0;
+let pulseAlpha = 0;
+let pulsing = false;
+
 function drawPulse() {
+
  if (!pulsing) return;
+
  pulseRadius += 2.5;
  pulseAlpha -= 0.007;
- if (pulseAlpha <= 0) { pulsing = false; pulseRadius = 0; return; }
+
+ if (pulseAlpha <= 0) {
+   pulsing = false;
+   pulseRadius = 0;
+   return;
+ }
+
  const c = colorAt(0.999);
+
  ctx.save();
+
  ctx.strokeStyle = c.rgb;
  ctx.lineWidth = 2;
  ctx.globalAlpha = pulseAlpha;
+
  ctx.shadowBlur = 20;
  ctx.shadowColor = c.rgb;
+
  ctx.beginPath();
- ctx.arc(W()/2, H()/2 + H()*0.03, pulseRadius, 0, Math.PI*2);
+
+ // CENTERED PULSE
+ ctx.arc(
+   W()/2,
+   H()/2,
+   pulseRadius,
+   0,
+   Math.PI*2
+ );
+
  ctx.stroke();
+
  ctx.restore();
 }
 
 function drawHeartOutline(pts) {
+
  if (pts < 2) return;
+
  const SEG = 4;
+
  for (let i = 0; i < pts - SEG; i += SEG) {
+
    const c = colorAt(i / TOTAL_PTS);
+
    ctx.save();
+
    ctx.strokeStyle = c.rgb;
    ctx.lineWidth = 3;
+
    ctx.shadowBlur = 24;
    ctx.shadowColor = c.rgb;
+
    ctx.globalAlpha = 0.95;
+
    ctx.lineCap = 'round';
    ctx.lineJoin = 'round';
+
    ctx.beginPath();
-   ctx.moveTo(heartPath[i].x, heartPath[i].y);
-   for (let j = i+1; j <= Math.min(i+SEG, pts-1); j++) {
-     ctx.lineTo(heartPath[j].x, heartPath[j].y);
+
+   ctx.moveTo(
+     heartPath[i].x,
+     heartPath[i].y
+   );
+
+   for (
+     let j = i+1;
+     j <= Math.min(i+SEG, pts-1);
+     j++
+   ) {
+     ctx.lineTo(
+       heartPath[j].x,
+       heartPath[j].y
+     );
    }
+
    ctx.stroke();
+
    ctx.lineWidth = 1;
    ctx.shadowBlur = 44;
    ctx.globalAlpha = 0.35;
+
    ctx.stroke();
+
    ctx.restore();
  }
 }
 
 function drawHead(x, y, color) {
+
  for (let r = 38; r >= 4; r -= 6) {
-   const grad = ctx.createRadialGradient(x,y,0,x,y,r);
-   grad.addColorStop(0, `rgba(${color.r},${color.g},${color.b},${0.07*(38-r)/38+0.02})`);
+
+   const grad = ctx.createRadialGradient(
+     x, y, 0,
+     x, y, r
+   );
+
+   grad.addColorStop(
+     0,
+     `rgba(${color.r},${color.g},${color.b},${0.07*(38-r)/38+0.02})`
+   );
+
    grad.addColorStop(1, 'transparent');
+
    ctx.save();
+
    ctx.fillStyle = grad;
+
    ctx.beginPath();
+
    ctx.arc(x,y,r,0,Math.PI*2);
+
    ctx.fill();
+
    ctx.restore();
  }
+
  ctx.save();
+
  ctx.fillStyle = '#ffffff';
+
  ctx.shadowBlur = 20;
  ctx.shadowColor = color.rgb;
+
  ctx.beginPath();
+
  ctx.arc(x,y,4,0,Math.PI*2);
+
  ctx.fill();
+
  ctx.restore();
 }
 
 let particles = [];
+
 let drawProgress = 0;
+
 const DRAW_SPEED = 0.0025;
-let animId, frameCount = 0, completed = false;
+
+let animId;
+let frameCount = 0;
+let completed = false;
 
 function spawnTrail(x, y, color) {
+
  const n = Math.floor(Math.random()*4)+2;
- for (let i=0;i<n;i++) particles.push(new Particle(x, y, color, 'trail'));
+
+ for (let i=0;i<n;i++) {
+   particles.push(
+     new Particle(x, y, color, 'trail')
+   );
+ }
 }
+
 function spawnAmbient() {
+
  if (drawProgress < 0.05) return;
- const idx = Math.floor(Math.random() * Math.floor(drawProgress * TOTAL_PTS));
- const p = heartPath[idx]; if (!p) return;
+
+ const idx = Math.floor(
+   Math.random() *
+   Math.floor(drawProgress * TOTAL_PTS)
+ );
+
+ const p = heartPath[idx];
+
+ if (!p) return;
+
  const c = colorAt(idx / TOTAL_PTS);
- const ap = new Particle(p.x+(Math.random()-0.5)*90, p.y+(Math.random()-0.5)*90, c, 'trail');
+
+ const ap = new Particle(
+   p.x + (Math.random()-0.5)*90,
+   p.y + (Math.random()-0.5)*90,
+   c,
+   'trail'
+ );
+
  ap.decay = Math.random()*0.004+0.001;
  ap.vx = (Math.random()-0.5)*0.4;
  ap.vy = (Math.random()-0.5)*0.4 - 0.15;
  ap.size = Math.random()*1.6+0.2;
+
  particles.push(ap);
 }
+
 function spawnBurst() {
+
  for (let i=0; i<heartPath.length; i+=10) {
+
    const c = colorAt(i/TOTAL_PTS);
-   for (let j=0;j<3;j++) particles.push(new Particle(heartPath[i].x, heartPath[i].y, c, 'burst'));
+
+   for (let j=0;j<3;j++) {
+
+     particles.push(
+       new Particle(
+         heartPath[i].x,
+         heartPath[i].y,
+         c,
+         'burst'
+       )
+     );
+   }
  }
 }
 
 function animate() {
+
  animId = requestAnimationFrame(animate);
+
  frameCount++;
 
  ctx.fillStyle = 'rgba(0,0,0,0.17)';
@@ -267,44 +524,82 @@ function animate() {
  drawStars(frameCount);
 
  if (!completed) {
-   drawProgress = Math.min(drawProgress + DRAW_SPEED, 1);
+
+   drawProgress = Math.min(
+     drawProgress + DRAW_SPEED,
+     1
+   );
+
    if (drawProgress >= 1) {
+
      completed = true;
-     pulsing = true; pulseRadius = 60; pulseAlpha = 0.9;
+
+     pulsing = true;
+     pulseRadius = 60;
+     pulseAlpha = 0.9;
+
      spawnBurst();
    }
  }
 
- const pts = Math.floor(drawProgress * TOTAL_PTS);
+ const pts = Math.floor(
+   drawProgress * TOTAL_PTS
+ );
+
  drawHeartOutline(pts);
 
  if (!completed) {
+
    const headIdx = Math.max(0, pts - 1);
+
    const pos = heartPath[headIdx];
+
    const c = colorAt(drawProgress);
+
    spawnTrail(pos.x, pos.y, c);
+
    drawHead(pos.x, pos.y, c);
  }
 
- if (frameCount % 2 === 0) spawnAmbient();
+ if (frameCount % 2 === 0) {
+   spawnAmbient();
+ }
+
  drawPulse();
 
- particles = particles.filter(p => p.life > 0);
- for (const p of particles) { p.update(); p.draw(frameCount); }
+ particles = particles.filter(
+   p => p.life > 0
+ );
+
+ for (const p of particles) {
+   p.update();
+   p.draw(frameCount);
+ }
 }
 
 function restart() {
+
  cancelAnimationFrame(animId);
+
  particles = [];
+
  drawProgress = 0;
+
  frameCount = 0;
+
  completed = false;
- pulsing = false; pulseRadius = 0; pulseAlpha = 0;
+
+ pulsing = false;
+ pulseRadius = 0;
+ pulseAlpha = 0;
+
  ctx.clearRect(0, 0, W(), H());
+
  animate();
 }
 
 animate();
 </script>
+
 </body>
 </html>
